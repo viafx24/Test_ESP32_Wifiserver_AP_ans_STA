@@ -1,40 +1,73 @@
 
-// /*
-//   WiFiAccessPoint.ino creates a WiFi access point and provides a web server on it.
-//   Steps:
-//   1. Connect to the access point "yourAp"
-//   2. Point your web browser to http://192.168.4.1/H to turn the LED on or http://192.168.4.1/L to turn it off
-//      OR
-//      Run raw TCP "GET /H" and "GET /L" on PuTTY terminal with 192.168.4.1 as IP address and 80 as port
-//   Created for arduino-esp32 on 04 July, 2018
-//   by Elochukwu Ifediora (fedy0)
-// */
+/*
+ WiFi Web Server LED Blink
 
+ A simple web server that lets you blink an LED via the web.
+ This sketch will print the IP address of your WiFi Shield (once connected)
+ to the Serial monitor. From there, you can open that address in a web browser
+ to turn on and off the LED on pin 5.
+
+ If the IP address of your shield is yourAddress:
+ http://yourAddress/H turns the LED on
+ http://yourAddress/L turns it off
+
+ This example is written for a network using WPA encryption. For
+ WEP or WPA, change the Wifi.begin() call accordingly.
+
+ Circuit:
+ * WiFi shield attached
+ * LED attached to pin 5
+
+ created for arduino 25 Nov 2012
+ by Tom Igoe
+
+ported for sparkfun esp32 
+31.01.2017 by Jan Hendrik Berlin
+ 
+ */
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiClient.h>
-#include <WiFiAP.h>
-#define LED_BUILTIN 2   // Set the GPIO pin where you connected your test LED or comment this line out if your dev board has a built-in LED
-// Set these to your desired credentials.
-const char *ssid = "TestAP";
-const char *password = "TestAP24";
+
+const char* ssid     = "freebox_OOKMJG";
+const char* password = "38100Alexandre!";
+
 WiFiServer server(80);
 
-void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  Serial.begin(115200);
-  Serial.println();
-  Serial.println("Configuring access point...");
-  // You can remove the password parameter if you want the AP to be open.
-  WiFi.softAP(ssid, password);
-  IPAddress myIP = WiFi.softAPIP();
-  Serial.print("AP IP address: ");
-  Serial.println(myIP);
-  server.begin();
-  Serial.println("Server started");
+void setup()
+{
+    Serial.begin(115200);
+    pinMode(2, OUTPUT);      // set the LED pin mode
+
+    delay(10);
+
+    // We start by connecting to a WiFi network
+
+    Serial.println();
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+    
+    server.begin();
+
 }
-void loop() {
-  WiFiClient client = server.available();   // listen for incoming clients
+
+int value = 0;
+
+void loop(){
+ WiFiClient client = server.available();   // listen for incoming clients
+
   if (client) {                             // if you get a client,
     Serial.println("New Client.");           // print a message out the serial port
     String currentLine = "";                // make a String to hold incoming data from the client
@@ -43,6 +76,7 @@ void loop() {
         char c = client.read();             // read a byte, then
         Serial.write(c);                    // print it out the serial monitor
         if (c == '\n') {                    // if the byte is a newline character
+
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
           if (currentLine.length() == 0) {
@@ -51,9 +85,11 @@ void loop() {
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
+
             // the content of the HTTP response follows the header:
-            client.print("Click <a href=\"/H\">here</a> to turn ON the LED.<br>");
-            client.print("Click <a href=\"/L\">here</a> to turn OFF the LED.<br>");
+            client.print("Click <a href=\"/H\">here</a> to turn the LED on pin 5 on.<br>");
+            client.print("Click <a href=\"/L\">here</a> to turn the LED on pin 5 off.<br>");
+
             // The HTTP response ends with another blank line:
             client.println();
             // break out of the while loop:
@@ -64,12 +100,13 @@ void loop() {
         } else if (c != '\r') {  // if you got anything else but a carriage return character,
           currentLine += c;      // add it to the end of the currentLine
         }
+
         // Check to see if the client request was "GET /H" or "GET /L":
         if (currentLine.endsWith("GET /H")) {
-          digitalWrite(LED_BUILTIN, HIGH);               // GET /H turns the LED on
+          digitalWrite(2, HIGH);               // GET /H turns the LED on
         }
         if (currentLine.endsWith("GET /L")) {
-          digitalWrite(LED_BUILTIN, LOW);                // GET /L turns the LED off
+          digitalWrite(2, LOW);                // GET /L turns the LED off
         }
       }
     }
